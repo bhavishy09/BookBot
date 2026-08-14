@@ -88,9 +88,7 @@ export default function Chat() {
       const data = await sendChat(sessionIdRef.current, text)
       const botMsg = { role: 'assistant', text: data.reply, time: timeNow() }
       setMessages((prev) => [...prev, botMsg])
-      if (data.pending_action) {
-        setPendingAction(data.pending_action)
-      }
+      setPendingAction(data.pending_action || null)
     } catch (err) {
       // Show the error as an assistant message so the user sees something
       const errMsg = { role: 'assistant', text: `Sorry, something went wrong: ${err.message}`, time: timeNow() }

@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 from config import settings
 from models import Appointment, Service, ChatMessage, AppointmentStatus, CreatedVia, MessageRole
 from schemas import ChatResponse
-from services.availability import check_availability, find_available_slots
+from services.availability import check_availability, find_available_slots, get_business_now
 from services.date_utils import parse_date
 
 
@@ -68,16 +68,24 @@ def _build_service_list(db: Session) -> str:
 
 
 def _build_system_prompt(db: Session) -> str:
-    """Build the system prompt with live service data."""
+    """Build the system prompt with live service data and current localized time."""
     service_list = _build_service_list(db)
+    now_local = get_business_now()
+    current_time_str = now_local.strftime("%A, %B %d, %Y at %I:%M %p")
+
     return f"""You are a friendly and efficient appointment booking assistant for a salon/barbershop.
 
 Your job is to help customers:
 1. Browse available services
 2. Find available time slots
 3. Book appointments
-4. Check appointment status
-5. Cancel appointments
+4. Reschedule appointments
+5. Check appointment status
+6. Cancel appointments
+
+## Current Time & Date
+The current time is {current_time_str}.
+Use this as the reference point for relative dates (like "today", "tomorrow", "next Friday").
 
 ## Available Services
 {service_list}
@@ -134,6 +142,18 @@ def _get_function_declarations() -> list[types.FunctionDeclaration]:
                     "appointment_id": types.Schema(type="INTEGER", description="ID of the appointment to cancel"),
                 },
                 required=["appointment_id"],
+            ),
+        ),
+        types.FunctionDeclaration(
+            name="reschedule_appointment",
+            description="Reschedule an existing appointment to a new date and time.",
+            parameters=types.Schema(
+                type="OBJECT",
+                properties={
+                    "appointment_id": types.Schema(type="INTEGER", description="ID of the appointment to reschedule"),
+                    "new_start_time": types.Schema(type="STRING", description="ISO 8601 datetime of the new time, e.g. 2025-03-15T10:00:00"),
+                },
+                required=["appointment_id", "new_start_time"],
             ),
         ),
         types.FunctionDeclaration(
@@ -293,6 +313,50 @@ def _handle_get_appointment_status(db: Session, args: dict) -> tuple[str, None]:
     return (msg, None)
 
 
+def _handle_reschedule_appointment(db: Session, args: dict) -> tuple[str, None]:
+    """Handle reschedule_appointment — update appointment start/end time if available."""
+    appointment_id = args["appointment_id"]
+    new_start_time_str = args["new_start_time"]
+
+    try:
+        new_start_time = datetime.fromisoformat(new_start_time_str)
+    except (ValueError, TypeError):
+        return (f"Invalid start time format: '{new_start_time_str}'. Please use ISO format like 2025-03-15T10:00:00.", None)
+
+    appt = db.query(Appointment).filter(Appointment.id == appointment_id).first()
+    if appt is None:
+        return (f"Appointment #{appointment_id} not found.", None)
+
+    if appt.status == AppointmentStatus.cancelled.value:
+        return (f"Appointment #{appointment_id} is cancelled. You cannot reschedule a cancelled appointment.", None)
+
+    # Fetch service to compute duration
+    service = db.query(Service).filter(Service.id == appt.service_id).first()
+    if service is None:
+        return (f"Service details not found for service ID {appt.service_id}.", None)
+
+    new_end_time = new_start_time + timedelta(minutes=service.duration_minutes)
+
+    # Check availability (exclude the current appointment ID from conflict check)
+    ok, reason, _ = check_availability(
+        db, appt.service_id, new_start_time, new_end_time, exclude_id=appt.id
+    )
+    if not ok:
+        return (f"Cannot reschedule: {reason}", None)
+
+    # Perform update
+    appt.start_time = new_start_time
+    appt.end_time = new_end_time
+    db.commit()
+
+    msg = (
+        f"✅ Appointment #{appt.id} has been rescheduled successfully!\n\n"
+        f"  📅 New Date: {new_start_time.strftime('%A, %B %d, %Y')}\n"
+        f"  🕐 New Time: {new_start_time.strftime('%I:%M %p')} – {new_end_time.strftime('%I:%M %p')}"
+    )
+    return (msg, None)
+
+
 def _handle_ask_clarification(args: dict) -> tuple[str, None]:
     """Handle ask_clarification — return the question to the user."""
     return (args["question"], None)
@@ -303,6 +367,7 @@ _FUNCTION_HANDLERS = {
     "create_appointment": _handle_create_appointment,
     "find_availability": _handle_find_availability,
     "cancel_appointment": _handle_cancel_appointment,
+    "reschedule_appointment": _handle_reschedule_appointment,
     "get_appointment_status": _handle_get_appointment_status,
     "ask_clarification": _handle_ask_clarification,
 }

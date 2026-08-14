@@ -10,11 +10,18 @@ Business rules:
   - No past-time booking
 """
 from datetime import datetime, timedelta, date, time
+from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm import Session
 
 from config import settings
 from models import Service, Appointment, AppointmentStatus
+
+
+def get_business_now() -> datetime:
+    """Return the current datetime in the business timezone, as a naive datetime (representing local time)."""
+    tz = ZoneInfo(settings.TIMEZONE)
+    return datetime.now(tz).replace(tzinfo=None)
 
 
 # Slot alignment granularity (15 minutes)
@@ -55,7 +62,7 @@ def check_availability(
     """
     BAD_REQUEST = 400
     CONFLICT = 409
-    now = datetime.now()
+    now = get_business_now()
 
     # 1. Past-time check
     if start_time < now:
@@ -90,7 +97,6 @@ def check_availability(
 
     # 5. Double-booking check — only look at confirmed/completed appointments
     query = db.query(Appointment).filter(
-        Appointment.service_id == service_id,
         Appointment.status.in_([AppointmentStatus.confirmed, AppointmentStatus.completed]),
         Appointment.start_time < end_time,
         Appointment.end_time > start_time,
@@ -129,7 +135,7 @@ def find_available_slots(
     biz_start = _business_start(target_date)
     biz_end = _business_end(target_date)
 
-    now = datetime.now()
+    now = get_business_now()
     if biz_end <= now:
         return []
 
@@ -141,7 +147,6 @@ def find_available_slots(
         effective_start = biz_start + timedelta(minutes=slots_past * SLOT_GRANULARITY_MINUTES)
 
     existing = db.query(Appointment).filter(
-        Appointment.service_id == service_id,
         Appointment.status.in_([AppointmentStatus.confirmed, AppointmentStatus.completed]),
         Appointment.start_time < biz_end,
         Appointment.end_time > biz_start,

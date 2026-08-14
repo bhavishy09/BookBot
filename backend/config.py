@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     BUSINESS_HOUR_START: int = 9   # 9:00 AM
     BUSINESS_HOUR_END: int = 17    # 5:00 PM
     BUSINESS_DAYS: list[int] = [0, 1, 2, 3, 4, 5, 6]  # Mon–Sun (all days open)
+    TIMEZONE: str = "Asia/Kolkata"
 
     class Config:
         env_file = "../.env"
