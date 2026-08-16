@@ -1,9 +1,6 @@
 import { Link } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
 
 export default function Footer() {
-  const { isAdmin } = useAuth()
-
   return (
     <footer className="site-footer">
       <div className="container">
@@ -32,11 +29,7 @@ export default function Footer() {
               <li><Link to="/about">About Us</Link></li>
               <li><Link to="/services">Services & Pricing</Link></li>
               <li><Link to="/chat">Book with AI Concierge</Link></li>
-              {isAdmin ? (
-                <li><Link to="/admin">Admin Dashboard</Link></li>
-              ) : (
-                <li><Link to="/login">Sign In / Admin Login</Link></li>
-              )}
+              <li><Link to="/admin">Admin Dashboard</Link></li>
             </ul>
           </div>
 
@@ -59,10 +52,10 @@ export default function Footer() {
               🕒 Mon – Sun: 9:00 AM – 5:00 PM
             </p>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-              📍 100 Grand Luxury Avenue, Suite 400
+              📍 Wave Silver Tower, Sector 18, Noida, UP
             </p>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
-              📞 Direct Desk: +1 (800) 555-BOOK
+              📞 Direct Desk: +91-9610363350
             </p>
             <Link to="/chat" className="btn btn-primary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.85rem' }}>
               Instant AI Booking ⚡

@@ -14,7 +14,15 @@ export async function fetchJSON(url, options = {}) {
   })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error(body.detail || `HTTP ${res.status}`)
+    let msg = `HTTP ${res.status}`
+    if (typeof body.detail === 'string') {
+      msg = body.detail
+    } else if (Array.isArray(body.detail)) {
+      msg = body.detail.map((err) => `${err.loc ? err.loc.slice(-1)[0] + ': ' : ''}${err.msg}`).join(', ')
+    } else if (body.detail && typeof body.detail === 'object') {
+      msg = JSON.stringify(body.detail)
+    }
+    throw new Error(msg)
   }
   return res.json()
 }

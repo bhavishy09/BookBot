@@ -9,7 +9,9 @@ import {
 
 /** Format an ISO datetime string as "Mon, Jan 15, 2025, 10:00 AM". */
 function formatDateTime(iso) {
+  if (!iso) return ''
   const d = new Date(iso)
+  if (isNaN(d.getTime())) return String(iso)
   return (
     d.toLocaleDateString('en-US', {
       weekday: 'short',
@@ -22,23 +24,43 @@ function formatDateTime(iso) {
   )
 }
 
+/** Extract YYYY-MM-DD from an ISO datetime. */
+function extractDate(iso) {
+  if (!iso) return ''
+  const match = String(iso).match(/^(\d{4}-\d{2}-\d{2})/)
+  if (match) return match[1]
+  return String(iso).slice(0, 10) || ''
+}
+
+/** Extract just the HH:MM portion from an ISO datetime. */
+function extractTime(iso) {
+  if (!iso) return ''
+  const match = String(iso).match(/[T\s](\d{2}:\d{2})/)
+  if (match) return match[1]
+  if (/^\d{2}:\d{2}$/.test(String(iso))) return String(iso)
+  return String(iso).slice(11, 16) || ''
+}
+
 /** Add `duration` minutes to an HH:MM time string and return HH:MM. */
 function addMinutes(timeStr, duration) {
-  const [h, m] = timeStr.split(':').map(Number)
+  if (!timeStr) return ''
+  const cleanTime = extractTime(timeStr)
+  if (!cleanTime.includes(':')) return ''
+  const [h, m] = cleanTime.split(':').map(Number)
+  if (isNaN(h) || isNaN(m)) return ''
   const total = h * 60 + m + duration
   const nh = Math.floor(total / 60) % 24
   const nm = total % 60
   return `${String(nh).padStart(2, '0')}:${String(nm).padStart(2, '0')}`
 }
 
-/** Combine a date string and a time string into an ISO datetime. */
+/** Combine a date string and a time string into an ISO datetime (YYYY-MM-DDTHH:MM:SS). */
 function toISO(dateStr, timeStr) {
-  return `${dateStr}T${timeStr}:00`
-}
-
-/** Extract just the HH:MM portion from an ISO datetime. */
-function extractTime(iso) {
-  return iso.slice(11, 16)
+  if (!dateStr || !timeStr) return null
+  const d = extractDate(dateStr)
+  const t = extractTime(timeStr)
+  if (!d || !t) return null
+  return `${d}T${t}:00`
 }
 
 /** Notification toast banner. */
@@ -90,10 +112,11 @@ function AppointmentModal({ mode, initial, services, onSave, onClose }) {
   const [form, setForm] = useState({
     customer_name: initial?.customer_name || '',
     customer_contact: initial?.customer_contact || '',
-    service_id: initial?.service_id || '',
-    date: initial ? initial.start_time.slice(0, 10) : '',
-    start_time: initial ? extractTime(initial.start_time) : '',
-    end_time: initial ? extractTime(initial.end_time) : '',
+    service_id: initial?.service_id || (services[0]?.id ? String(services[0].id) : ''),
+    status: initial?.status || 'confirmed',
+    date: initial?.start_time ? extractDate(initial.start_time) : '',
+    start_time: initial?.start_time ? extractTime(initial.start_time) : '',
+    end_time: initial?.end_time ? extractTime(initial.end_time) : '',
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -101,14 +124,14 @@ function AppointmentModal({ mode, initial, services, onSave, onClose }) {
   const handleServiceChange = (e) => {
     const sid = Number(e.target.value)
     const svc = services.find((s) => s.id === sid)
-    const newEndTime = svc && form.start_time ? addMinutes(form.start_time, svc.duration_minutes) : ''
+    const newEndTime = svc && form.start_time ? addMinutes(form.start_time, svc.duration_minutes) : form.end_time
     setForm((f) => ({ ...f, service_id: sid, end_time: newEndTime }))
   }
 
   const handleStartTimeChange = (e) => {
     const st = e.target.value
-    const svc = services.find((s) => s.id === form.service_id)
-    const newEndTime = svc ? addMinutes(st, svc.duration_minutes) : ''
+    const svc = services.find((s) => s.id === Number(form.service_id))
+    const newEndTime = svc && st ? addMinutes(st, svc.duration_minutes) : form.end_time
     setForm((f) => ({ ...f, start_time: st, end_time: newEndTime }))
   }
 
@@ -120,17 +143,23 @@ function AppointmentModal({ mode, initial, services, onSave, onClose }) {
     setError('')
     setSaving(true)
     try {
+      const st = toISO(form.date, form.start_time)
+      const et = toISO(form.date, form.end_time)
+      if (!st || !et) {
+        throw new Error('Please select a valid date, start time, and end time.')
+      }
       const payload = {
-        customer_name: form.customer_name,
-        customer_contact: form.customer_contact,
+        customer_name: form.customer_name.trim(),
+        customer_contact: form.customer_contact.trim(),
         service_id: Number(form.service_id),
-        start_time: toISO(form.date, form.start_time),
-        end_time: toISO(form.date, form.end_time),
+        start_time: st,
+        end_time: et,
+        status: form.status || 'confirmed',
         created_via: 'admin',
       }
       await onSave(payload)
     } catch (err) {
-      setError(err.message)
+      setError(err.message || 'Failed to save appointment.')
     } finally {
       setSaving(false)
     }
@@ -141,7 +170,7 @@ function AppointmentModal({ mode, initial, services, onSave, onClose }) {
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3 style={{ fontFamily: 'var(--font-serif)', color: 'var(--gold-bright)', margin: 0 }}>
-            {mode === 'create' ? 'Create New Appointment' : 'Edit Appointment'}
+            {mode === 'create' ? 'Create New Appointment' : `Edit Appointment #${initial?.id || ''}`}
           </h3>
           <button
             onClick={onClose}
@@ -182,32 +211,51 @@ function AppointmentModal({ mode, initial, services, onSave, onClose }) {
                 style={{ width: '100%' }}
                 value={form.customer_contact}
                 onChange={handleChange('customer_contact')}
-                placeholder="e.g. +91 98765 43210"
+                placeholder="e.g. +1 555 019 2834"
                 required
               />
             </div>
 
-            <div>
-              <label style={{ display: 'block', color: 'var(--text-gold)', fontSize: '0.8rem', fontWeight: '600', marginBottom: '0.35rem', textTransform: 'uppercase' }}>
-                Service
-              </label>
-              <select
-                className="form-control-luxury"
-                style={{ width: '100%' }}
-                value={form.service_id}
-                onChange={handleServiceChange}
-                required
-              >
-                <option value="">Select a service…</option>
-                {services.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} ({s.duration_minutes} min)
-                  </option>
-                ))}
-              </select>
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0.75rem' }}>
+              <div>
+                <label style={{ display: 'block', color: 'var(--text-gold)', fontSize: '0.8rem', fontWeight: '600', marginBottom: '0.35rem', textTransform: 'uppercase' }}>
+                  Service
+                </label>
+                <select
+                  className="form-control-luxury"
+                  style={{ width: '100%' }}
+                  value={form.service_id}
+                  onChange={handleServiceChange}
+                  required
+                >
+                  <option value="">Select a service…</option>
+                  {services.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.duration_minutes} min)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', color: 'var(--text-gold)', fontSize: '0.8rem', fontWeight: '600', marginBottom: '0.35rem', textTransform: 'uppercase' }}>
+                  Status
+                </label>
+                <select
+                  className="form-control-luxury"
+                  style={{ width: '100%' }}
+                  value={form.status}
+                  onChange={handleChange('status')}
+                  required
+                >
+                  <option value="confirmed">Confirmed</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '0.75rem' }}>
               <div>
                 <label style={{ display: 'block', color: 'var(--text-gold)', fontSize: '0.8rem', fontWeight: '600', marginBottom: '0.35rem', textTransform: 'uppercase' }}>
                   Date
@@ -224,7 +272,7 @@ function AppointmentModal({ mode, initial, services, onSave, onClose }) {
 
               <div>
                 <label style={{ display: 'block', color: 'var(--text-gold)', fontSize: '0.8rem', fontWeight: '600', marginBottom: '0.35rem', textTransform: 'uppercase' }}>
-                  Start
+                  Start Time
                 </label>
                 <input
                   type="time"
@@ -238,7 +286,7 @@ function AppointmentModal({ mode, initial, services, onSave, onClose }) {
 
               <div>
                 <label style={{ display: 'block', color: 'var(--text-gold)', fontSize: '0.8rem', fontWeight: '600', marginBottom: '0.35rem', textTransform: 'uppercase' }}>
-                  End
+                  End Time
                 </label>
                 <input
                   type="time"
@@ -263,7 +311,7 @@ function AppointmentModal({ mode, initial, services, onSave, onClose }) {
               Cancel
             </button>
             <button type="submit" className="btn btn-primary" disabled={saving} style={{ padding: '0.5rem 1.25rem', fontSize: '0.85rem' }}>
-              {saving ? 'Saving...' : mode === 'create' ? 'Create Appointment' : 'Update Appointment'}
+              {saving ? 'Saving...' : mode === 'create' ? 'Create Appointment' : 'Save Changes'}
             </button>
           </div>
         </form>
@@ -369,6 +417,16 @@ export default function Dashboard() {
     }
   }
 
+  const handleQuickStatus = async (apt, newStatus) => {
+    try {
+      await updateAppointment(apt.id, { status: newStatus })
+      fetchAppointments()
+      showToast(`Appointment #${apt.id} marked as ${newStatus}!`)
+    } catch (err) {
+      showToast(err.message, 'error')
+    }
+  }
+
   const openCreate = () => {
     setEditTarget(null)
     setModalMode('create')
@@ -420,8 +478,8 @@ export default function Dashboard() {
               >
                 <option value="">All Statuses</option>
                 <option value="confirmed">Confirmed</option>
-                <option value="cancelled">Cancelled</option>
                 <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
               </select>
             </div>
 
@@ -483,28 +541,60 @@ export default function Dashboard() {
                         </span>
                       </td>
                       <td>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                           <button
                             className="btn btn-secondary"
                             onClick={() => openEdit(apt)}
-                            style={{ padding: '0.3rem 0.75rem', fontSize: '0.78rem' }}
+                            style={{ padding: '0.25rem 0.65rem', fontSize: '0.75rem' }}
                           >
                             Edit
                           </button>
-                          {apt.status === 'confirmed' && (
+                          {apt.status !== 'confirmed' && (
                             <button
                               className="btn"
-                              onClick={() => setCancelTarget(apt)}
+                              onClick={() => handleQuickStatus(apt, 'confirmed')}
                               style={{
-                                background: 'transparent',
-                                border: '1px solid rgba(239, 68, 68, 0.4)',
-                                color: '#FCA5A5',
-                                padding: '0.3rem 0.75rem',
-                                fontSize: '0.78rem',
+                                background: 'var(--status-confirmed-bg)',
+                                border: '1px solid var(--status-confirmed)',
+                                color: 'var(--status-confirmed)',
+                                padding: '0.25rem 0.65rem',
+                                fontSize: '0.75rem',
                               }}
+                              title="Confirm booking"
                             >
-                              Cancel
+                              Confirm
                             </button>
+                          )}
+                          {apt.status === 'confirmed' && (
+                            <>
+                              <button
+                                className="btn"
+                                onClick={() => handleQuickStatus(apt, 'completed')}
+                                style={{
+                                  background: 'var(--status-completed-bg)',
+                                  border: '1px solid var(--status-completed)',
+                                  color: 'var(--status-completed)',
+                                  padding: '0.25rem 0.65rem',
+                                  fontSize: '0.75rem',
+                                }}
+                                title="Mark service completed"
+                              >
+                                Complete
+                              </button>
+                              <button
+                                className="btn"
+                                onClick={() => setCancelTarget(apt)}
+                                style={{
+                                  background: 'transparent',
+                                  border: '1px solid rgba(239, 68, 68, 0.4)',
+                                  color: '#FCA5A5',
+                                  padding: '0.25rem 0.65rem',
+                                  fontSize: '0.75rem',
+                                }}
+                              >
+                                Cancel
+                              </button>
+                            </>
                           )}
                         </div>
                       </td>
