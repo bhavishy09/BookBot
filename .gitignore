@@ -25,4 +25,10 @@ yarn-error.log*
 # OS files
 .DS_Store
 Thumbs.db
+
+# Internal / Evaluator Briefs & Task Logs
 build_brief.pdf
+*.pdf
+info.md
+worklog.md
+.agents/
