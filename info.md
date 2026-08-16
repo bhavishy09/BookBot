@@ -44,7 +44,7 @@ To maximize your score, explicitly address these four aspects in your **README**
 Before final submission, double-check these requirements:
 1. **Business Hours / Closed Days**: Currently, settings default to Monday-Sunday (all days open), 9 AM - 5 PM. Does your school/assignment require specific holidays or closed days (e.g. weekends)? If so, update `BUSINESS_DAYS` in `backend/config.py`.
 2. **Demo Video Hosting**: Does your evaluator want the video uploaded directly to GitHub, or should it be a Loom/YouTube link in the README? (A link in the README is usually best).
-3. **Admin User Credentials**: The seeded credentials are `admin@example.com` / `admin123`. Ensure this is documented clearly in the README.
+3. **Admin User Credentials**: The seeded credentials are `admin@bookbot.com` / `BookBot#Admin2026!Secure`. Ensure this is documented clearly in the README.
 
 ---
 
@@ -67,7 +67,7 @@ Here is a recommended script/flow to record your Loom video:
   - In chat, say: *"Can you reschedule my appointment #1 to tomorrow at 1:00 PM?"*
   - Watch it update. Ask the bot: *"What is the status of appointment #1?"*
 - **3:30 - 4:30: Admin Dashboard CRUD**
-  - Log in to `/admin` using `admin@example.com` / `admin123`.
+  - Log in to `/admin` using `admin@bookbot.com` / `BookBot#Admin2026!Secure`.
   - Show the list of bookings. Filter by date or status.
   - Create a new booking manually, edit an existing one, and cancel a booking.
 - **4:30 - 5:00: Testing & Code Quality**

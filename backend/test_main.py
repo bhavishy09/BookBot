@@ -30,10 +30,10 @@ def setup_db():
     ]
     db.add_all(services)
     
-    # Seed admin user (admin@example.com / admin123)
+    # Seed admin user (admin@bookbot.com / BookBot#Admin2026!Secure)
     admin = AdminUser(
-        email="admin@example.com",
-        password_hash=bcrypt.hash("admin123"),
+        email="admin@bookbot.com",
+        password_hash=bcrypt.hash("BookBot#Admin2026!Secure"),
     )
     db.add(admin)
     
@@ -85,7 +85,7 @@ def test_health_check(client):
 
 
 def test_login_success(client):
-    response = client.post("/auth/login", json={"email": "admin@example.com", "password": "admin123"})
+    response = client.post("/auth/login", json={"email": "admin@bookbot.com", "password": "BookBot#Admin2026!Secure"})
     assert response.status_code == 200
     data = response.json()
     assert "access_token" in data
@@ -93,7 +93,7 @@ def test_login_success(client):
 
 
 def test_login_failure(client):
-    response = client.post("/auth/login", json={"email": "admin@example.com", "password": "wrongpassword"})
+    response = client.post("/auth/login", json={"email": "admin@bookbot.com", "password": "wrongpassword"})
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid email or password."
 
@@ -129,7 +129,7 @@ def test_create_appointment_unauthorized(client):
 
 def test_create_appointment_success(client):
     # Log in to get token
-    login_res = client.post("/auth/login", json={"email": "admin@example.com", "password": "admin123"})
+    login_res = client.post("/auth/login", json={"email": "admin@bookbot.com", "password": "BookBot#Admin2026!Secure"})
     token = login_res.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
     
@@ -162,7 +162,7 @@ def test_conflict_prevention_different_services(client):
     (strict single-provider resource scheduling).
     """
     # Log in
-    login_res = client.post("/auth/login", json={"email": "admin@example.com", "password": "admin123"})
+    login_res = client.post("/auth/login", json={"email": "admin@bookbot.com", "password": "BookBot#Admin2026!Secure"})
     token = login_res.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
     
@@ -205,7 +205,7 @@ def test_conflict_prevention_different_services(client):
 # ──────────────────────────────────────────────────────────────────────
 
 def test_past_time_booking_prevention(client):
-    login_res = client.post("/auth/login", json={"email": "admin@example.com", "password": "admin123"})
+    login_res = client.post("/auth/login", json={"email": "admin@bookbot.com", "password": "BookBot#Admin2026!Secure"})
     token = login_res.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
     
@@ -228,7 +228,7 @@ def test_past_time_booking_prevention(client):
 
 
 def test_business_hours_out_of_bounds(client):
-    login_res = client.post("/auth/login", json={"email": "admin@example.com", "password": "admin123"})
+    login_res = client.post("/auth/login", json={"email": "admin@bookbot.com", "password": "BookBot#Admin2026!Secure"})
     token = login_res.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
     
@@ -256,7 +256,7 @@ def test_business_hours_out_of_bounds(client):
 # ──────────────────────────────────────────────────────────────────────
 
 def test_reschedule_appointment_success(client):
-    login_res = client.post("/auth/login", json={"email": "admin@example.com", "password": "admin123"})
+    login_res = client.post("/auth/login", json={"email": "admin@bookbot.com", "password": "BookBot#Admin2026!Secure"})
     token = login_res.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
     
@@ -292,7 +292,7 @@ def test_reschedule_appointment_success(client):
 
 
 def test_reschedule_appointment_conflict(client):
-    login_res = client.post("/auth/login", json={"email": "admin@example.com", "password": "admin123"})
+    login_res = client.post("/auth/login", json={"email": "admin@bookbot.com", "password": "BookBot#Admin2026!Secure"})
     token = login_res.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
     

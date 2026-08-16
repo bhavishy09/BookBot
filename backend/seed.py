@@ -24,14 +24,19 @@ if db.query(Service).count() == 0:
     db.add_all(services)
     print("Seeded 5 services.")
 
-# Seed admin if empty
-if db.query(AdminUser).count() == 0:
+# Seed admin or update existing default admin
+admin = db.query(AdminUser).filter(AdminUser.email.in_(["admin@example.com", "admin@bookbot.com"])).first()
+if not admin:
     admin = AdminUser(
-        email="admin@example.com",
-        password_hash=bcrypt.hash("admin123"),
+        email="admin@bookbot.com",
+        password_hash=bcrypt.hash("BookBot#Admin2026!Secure"),
     )
     db.add(admin)
-    print("Seeded admin user (admin@example.com / admin123).")
+    print("Seeded strong admin user (admin@bookbot.com / BookBot#Admin2026!Secure).")
+else:
+    admin.email = "admin@bookbot.com"
+    admin.password_hash = bcrypt.hash("BookBot#Admin2026!Secure")
+    print("Updated admin user credentials to (admin@bookbot.com / BookBot#Admin2026!Secure).")
 
 db.commit()
 db.close()
