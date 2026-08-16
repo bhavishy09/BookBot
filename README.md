@@ -6,7 +6,15 @@ BookBot is an intelligent, conversational booking assistant designed for a local
 
 ## 1. Abstract
 
-*This section is reserved for the user to write/customize their own project abstract. Please replace this placeholder with your own summary of the project's goals, impact, and design decisions.*
+Booking an appointment with a small business today usually means endless back-and-forth texting — *"Are you free on Tuesday?"*, *"Can we shift it to Wednesday?"* — until someone finally locks in a slot. It is slow, prone to miscommunication, and leaves business owners juggling requests across WhatsApp, calls, and DMs with no single source of truth.
+
+**BookBot** solves this with an AI-driven, conversational booking assistant paired with a centralized management portal:
+
+- **For Customers**: Anyone can request a booking in everyday language — *"Book me a haircut this Friday afternoon"* — and the assistant identifies missing details, checks live availability, and confirms the reservation. No rigid multi-step forms, no dropdown menus, and no calendar friction.
+- **For Business Owners**: A real-time admin dashboard aggregates every booking with instant filtering, manual scheduling, and one-click cancellation or status updates.
+- **The Core Reliability Constraint**: Availability checking is bulletproof. Every booking, edit, and rescheduling action runs through strict deterministic conflict validation before confirmation, preventing double-bookings and maintaining absolute calendar trust.
+
+The thesis is simple: **natural language removes the friction of booking, and a central dashboard removes the chaos of scattered inboxes.**
 
 ---
 
