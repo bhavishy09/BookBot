@@ -8,9 +8,13 @@ const BASE = '' // proxied in dev; change to full URL in production
  * Core fetch wrapper with JSON handling and error extraction.
  */
 export async function fetchJSON(url, options = {}) {
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(options.headers || {}),
+  }
   const res = await fetch(`${BASE}${url}`, {
-    headers: { 'Content-Type': 'application/json', ...options.headers },
     ...options,
+    headers,
   })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))

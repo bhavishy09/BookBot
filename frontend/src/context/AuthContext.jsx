@@ -9,7 +9,25 @@ import { login as apiLogin } from '../api/client'
 const AuthContext = createContext(null)
 
 /** Custom hook for consuming auth state. */
-export const useAuth = () => useContext(AuthContext)
+export const useAuth = () => {
+  const ctx = useContext(AuthContext)
+  if (!ctx) {
+    return {
+      token: null,
+      userRole: null,
+      userEmail: null,
+      userName: null,
+      userPhone: null,
+      isAuthenticated: false,
+      isAdmin: false,
+      isCustomer: false,
+      login: async () => {},
+      loginCustomer: () => {},
+      logout: () => {},
+    }
+  }
+  return ctx
+}
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('token'))
