@@ -10,11 +10,11 @@ import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
 
 /**
- * Protected route wrapper — redirects to /login if not authenticated.
+ * Protected route wrapper — strictly requires Admin authentication.
  */
-function RequireAuth({ children }) {
-  const { isAuthenticated } = useAuth()
-  return isAuthenticated ? children : <Navigate to="/login" replace />
+function RequireAdmin({ children }) {
+  const { isAdmin } = useAuth()
+  return isAdmin ? children : <Navigate to="/login" replace />
 }
 
 export default function App() {
@@ -32,9 +32,9 @@ export default function App() {
               <Route
                 path="/admin"
                 element={
-                  <RequireAuth>
+                  <RequireAdmin>
                     <Dashboard />
-                  </RequireAuth>
+                  </RequireAdmin>
                 }
               />
               <Route path="/login" element={<Login />} />

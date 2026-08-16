@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { sendChat, listServices } from '../api/client'
+import { useAuth } from '../context/AuthContext'
 
 /** Generate a random UUID-like session identifier. */
 function generateSessionId() {
@@ -19,6 +20,7 @@ export default function Chat() {
   const [pendingAction, setPendingAction] = useState(null)
   const [services, setServices] = useState([])
   const [searchParams] = useSearchParams()
+  const { isCustomer, userName, userPhone } = useAuth()
 
   const sessionIdRef = useRef(generateSessionId())
   const bottomRef = useRef(null)
@@ -39,13 +41,17 @@ export default function Chat() {
       .catch(() => {})
   }, [])
 
-  // Auto-fill prompt if service passed via URL query
+  // Auto-fill prompt if service passed via URL query or customer logged in
   useEffect(() => {
     const serviceParam = searchParams.get('service')
     if (serviceParam && messages.length === 0) {
-      setInput(`I want to book a ${serviceParam} for tomorrow. My name is `)
+      if (isCustomer && userName) {
+        setInput(`I want to book a ${serviceParam} for tomorrow. My name is ${userName}${userPhone ? `, phone ${userPhone}` : ''}`)
+      } else {
+        setInput(`I want to book a ${serviceParam} for tomorrow. My name is `)
+      }
     }
-  }, [searchParams, messages.length])
+  }, [searchParams, messages.length, isCustomer, userName, userPhone])
 
   // Scroll to bottom
   useEffect(() => {
@@ -91,7 +97,11 @@ export default function Chat() {
   }
 
   const selectServicePrompt = (svcName) => {
-    setInput(`I would like to book a ${svcName}. What slots are open tomorrow?`)
+    if (isCustomer && userName) {
+      setInput(`I would like to book a ${svcName} tomorrow at 2 PM. My name is ${userName}${userPhone ? `, phone ${userPhone}` : ''}.`)
+    } else {
+      setInput(`I would like to book a ${svcName}. What slots are open tomorrow?`)
+    }
     inputRef.current?.focus()
   }
 
@@ -105,6 +115,23 @@ export default function Chat() {
         <p style={{ color: 'var(--text-muted)', maxWidth: '620px', margin: '0 auto' }}>
           Chat with BookBot in natural English to book appointments, check open slots, or reschedule anytime.
         </p>
+
+        {isCustomer && userName && (
+          <div style={{ marginTop: '0.75rem' }}>
+            <span
+              style={{
+                fontSize: '0.82rem',
+                color: 'var(--gold-bright)',
+                background: 'rgba(212, 175, 55, 0.12)',
+                padding: '0.3rem 0.85rem',
+                borderRadius: 'var(--radius-full)',
+                border: '1px solid var(--gold-border)',
+              }}
+            >
+              ✨ Signed in as: <strong>{userName}</strong> ({userPhone || 'No phone set'})
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="chat-page-container">

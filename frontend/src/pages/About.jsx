@@ -7,11 +7,11 @@ export default function About() {
   const faqs = [
     {
       q: 'How does the BookBot AI booking work?',
-      a: 'BookBot is an AI-powered receptionist that understands natural human language. You can type requests like "I need a haircut tomorrow at 3 PM, my name is John Doe, phone 9876543210". The assistant finds open slots, verifies that no other appointment conflicts, and prepares a booking summary for you to confirm with a single "yes".',
+      a: 'BookBot is an AI-powered receptionist that understands natural human language. You can type requests like "I need a haircut tomorrow at 3 PM, my name is John Doe, phone 555-1234". The assistant finds open slots, verifies that no other appointment conflicts, and prepares a booking summary for you to confirm with a single "yes".',
     },
     {
       q: 'What are your business hours and location?',
-      a: 'We are open 7 days a week (Monday through Sunday) from 9:00 AM to 5:00 PM. We are located at Wave Silver Tower, Sector 18, Noida.',
+      a: 'We are open 7 days a week (Monday through Sunday) from 9:00 AM to 5:00 PM. We are located in the Grand Luxury Salon District at 100 Grand Luxury Avenue, Suite 400.',
     },
     {
       q: 'Can I reschedule or cancel my appointment through chat?',
@@ -82,14 +82,14 @@ export default function About() {
               <span className="section-label">VISIT OUR SALON</span>
               <h2 className="section-heading">Location & Atmosphere</h2>
               <p className="philosophy-text">
-                Step into our tranquil, British-inspired lounge with mahogany accents, vintage leather barber chairs, soothing ambient music, and complimentary artisan beverages.
+                Step into our tranquil lounge with mahogany accents, vintage leather barber chairs, soothing ambient music, and complimentary artisan beverages.
               </p>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', borderTop: '1px solid var(--gold-border)', paddingTop: '1.25rem' }}>
                 <div>
                   <h4 style={{ color: 'var(--gold-bright)', fontSize: '1rem', marginBottom: '0.25rem' }}>📍 Address</h4>
                   <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>
-                    Level 2, Wave Silver Tower, Sector 18, Noida, Uttar Pradesh 201301
+                    100 Grand Luxury Avenue, Suite 400, Downtown Salon District
                   </p>
                 </div>
                 <div>
@@ -101,7 +101,7 @@ export default function About() {
                 <div>
                   <h4 style={{ color: 'var(--gold-bright)', fontSize: '1rem', marginBottom: '0.25rem' }}>📞 Phone Desk</h4>
                   <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>
-                    +91-7303880491
+                    +1 (800) 555-BOOK
                   </p>
                 </div>
               </div>

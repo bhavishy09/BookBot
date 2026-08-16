@@ -1,6 +1,7 @@
 /**
- * AuthContext — provides authentication state to the whole app.
- * Stores the JWT token in localStorage and exposes login/logout helpers.
+ * AuthContext — provides authentication and user profile state.
+ * Supports both Admin authentication (JWT via backend API)
+ * and Customer sign-in for seamless personalized bookings.
  */
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { login as apiLogin } from '../api/client'
@@ -10,46 +11,86 @@ const AuthContext = createContext(null)
 /** Custom hook for consuming auth state. */
 export const useAuth = () => useContext(AuthContext)
 
-/**
- * Provider component — wrap the App with this.
- * On mount it checks localStorage for an existing token.
- */
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('token'))
+  const [userRole, setUserRole] = useState(() => localStorage.getItem('userRole')) // 'admin' | 'customer' | null
   const [userEmail, setUserEmail] = useState(() => localStorage.getItem('userEmail'))
+  const [userName, setUserName] = useState(() => localStorage.getItem('userName'))
+  const [userPhone, setUserPhone] = useState(() => localStorage.getItem('userPhone'))
 
-  // Derived boolean — true when a token exists
-  const isAuthenticated = !!token
+  const isAuthenticated = !!token || userRole === 'customer'
+  const isAdmin = userRole === 'admin' && !!token
+  const isCustomer = userRole === 'customer'
 
-  // Persist token & email to localStorage whenever they change
+  // Persist auth state to localStorage
   useEffect(() => {
-    if (token) {
+    if (token && userRole === 'admin') {
       localStorage.setItem('token', token)
+      localStorage.setItem('userRole', 'admin')
       localStorage.setItem('userEmail', userEmail || '')
+      localStorage.setItem('userName', userName || 'Administrator')
+    } else if (userRole === 'customer') {
+      localStorage.setItem('userRole', 'customer')
+      localStorage.setItem('userEmail', userEmail || '')
+      localStorage.setItem('userName', userName || '')
+      localStorage.setItem('userPhone', userPhone || '')
+      localStorage.removeItem('token')
     } else {
       localStorage.removeItem('token')
+      localStorage.removeItem('userRole')
       localStorage.removeItem('userEmail')
+      localStorage.removeItem('userName')
+      localStorage.removeItem('userPhone')
     }
-  }, [token, userEmail])
+  }, [token, userRole, userEmail, userName, userPhone])
 
   /**
-   * Call the login API and store the returned token.
-   * Throws on failure so the caller can catch and show errors.
+   * Admin login — calls backend JWT endpoint.
    */
   const login = useCallback(async (email, password) => {
     const data = await apiLogin(email, password)
     setToken(data.access_token)
+    setUserRole('admin')
     setUserEmail(email)
+    setUserName('Administrator')
     return data
   }, [])
 
-  /** Clear token and redirect (caller handles navigation). */
-  const logout = useCallback(() => {
+  /**
+   * Customer sign-in.
+   */
+  const loginCustomer = useCallback((name, email, phone) => {
+    setUserRole('customer')
+    setUserName(name)
+    setUserEmail(email)
+    setUserPhone(phone || '')
     setToken(null)
-    setUserEmail(null)
   }, [])
 
-  const value = { token, userEmail, isAuthenticated, login, logout }
+  /**
+   * Logout helper.
+   */
+  const logout = useCallback(() => {
+    setToken(null)
+    setUserRole(null)
+    setUserEmail(null)
+    setUserName(null)
+    setUserPhone(null)
+  }, [])
+
+  const value = {
+    token,
+    userRole,
+    userEmail,
+    userName,
+    userPhone,
+    isAuthenticated,
+    isAdmin,
+    isCustomer,
+    login,
+    loginCustomer,
+    logout,
+  }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
