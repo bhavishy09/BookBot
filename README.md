@@ -18,33 +18,36 @@ The system is built on a decoupled full-stack architecture separating conversati
 
 ```mermaid
 graph TD
-    subgraph Frontend [React Web App]
-        Chat[Chat Interface /]
-        Dash[Admin Dashboard /admin]
-        Login[Login Page /login]
+    subgraph Frontend ["React Web App"]
+        Home["Landing Page (/)"]
+        About["About Us (/about)"]
+        Services["Services & Menu (/services)"]
+        Chat["AI Chat Interface (/chat)"]
+        Dash["Admin Dashboard (/admin)"]
+        Login["Sign In Portal (/login)"]
     end
 
-    subgraph Backend [FastAPI Application]
-        AuthRouter[/auth/login]
-        ApptRouter[/appointments]
-        ChatRouter[/chat]
-        GeminiClient[Gemini Client / NLU Function Loop]
-        AvailEngine[Availability Engine]
+    subgraph Backend ["FastAPI Application"]
+        AuthRouter["Auth Router (/auth/login)"]
+        ApptRouter["Appointments Router (/appointments)"]
+        ChatRouter["Chat Router (/chat)"]
+        GeminiClient["Gemini Client & NLU Function Loop"]
+        AvailEngine["Availability Engine"]
     end
 
-    subgraph Storage [SQLite / PostgreSQL]
-        DB[(Database Tables)]
+    subgraph Storage ["SQLite / PostgreSQL"]
+        DB[("Database Tables")]
     end
 
-    Chat -->|POST /chat| ChatRouter
-    Dash -->|GET/POST/PUT/POST-cancel| ApptRouter
-    Login -->|POST| AuthRouter
+    Chat -->|"POST /chat"| ChatRouter
+    Dash -->|"GET / POST / PUT / Cancel"| ApptRouter
+    Login -->|"POST /auth/login"| AuthRouter
     
     ChatRouter --> GeminiClient
-    GeminiClient -->|Function Call| AvailEngine
-    AvailEngine -->|Query / Verify| DB
-    GeminiClient -->|Store Chat History| DB
-    ApptRouter -->|CRUD operations| DB
+    GeminiClient -->|"Function Calls"| AvailEngine
+    AvailEngine -->|"Query / Verify Slots"| DB
+    GeminiClient -->|"Store Conversation"| DB
+    ApptRouter -->|"CRUD Mutations"| DB
 ```
 
 ### Feature Breakdown
